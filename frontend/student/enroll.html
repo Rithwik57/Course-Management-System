@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Enroll</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('student');
+    if (user) {
+      const courseId = parseInt(getUrlParam('id'));
+      const course = getCourses().find(c => c.id === courseId);
+      if (!course) { window.location.href = 'catalog.html'; }
+      else {
+        document.getElementById('app').innerHTML = `
+          ${renderNavbar(user)}
+          <main class="main">
+            <div class="confirm-wrapper">
+              <div class="card">
+                <h2>Confirm Enrollment</h2>
+                <p style="margin-top:.5rem;color:var(--muted-fg)">You are about to enroll in:</p>
+                <div class="card" style="margin-top:1rem;background:var(--secondary)">
+                  <h3>${course.title}</h3>
+                  <p class="text-sm text-muted">${course.semester} · ${course.enrollStatus}</p>
+                  <p class="text-sm" style="margin-top:.5rem">${course.details}</p>
+                </div>
+                <div class="confirm-actions">
+                  <button class="btn btn-primary" onclick="doEnroll()">Confirm Enrollment</button>
+                  <a href="catalog.html" class="btn btn-outline">Cancel</a>
+                </div>
+              </div>
+            </div>
+          </main>`;
+      }
+    }
+    function doEnroll() {
+      enrollStudent(user.id, parseInt(getUrlParam('id')));
+      showToast('Successfully enrolled!');
+      setTimeout(() => window.location.href = 'my-courses.html', 500);
+    }
+  </script>
+</body>
+</html>

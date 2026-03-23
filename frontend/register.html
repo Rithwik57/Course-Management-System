@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Register</title>
+  <link rel="stylesheet" href="shared/style.css">
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">🎓</div>
+        <h1>Create Account</h1>
+        <p>Join MyCourses as a student</p>
+      </div>
+      <div class="card">
+        <form id="regForm">
+          <div id="error" class="alert-error" style="display:none"></div>
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="name" class="form-input" placeholder="John Doe" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="email" class="form-input" placeholder="you@uni.edu" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password</label>
+            <input type="password" id="confirm" class="form-input" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+        </form>
+        <p class="text-center text-sm text-muted" style="margin-top:1.25rem">
+          Already have an account? <a href="index.html" class="link-primary">Sign In</a>
+        </p>
+      </div>
+    </div>
+  </div>
+  <script src="shared/app.js"></script>
+  <script>
+    document.getElementById('regForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const pw = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm').value;
+      const err = document.getElementById('error');
+      if (pw !== confirm) { err.style.display='flex'; err.textContent='⚠ Passwords do not match.'; return; }
+      if (pw.length < 6) { err.style.display='flex'; err.textContent='⚠ Password must be at least 6 characters.'; return; }
+      const user = register(name, email, pw);
+      if (!user) { err.style.display='flex'; err.textContent='⚠ Email already registered.'; return; }
+      window.location.href = 'student/dashboard.html';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Student Dashboard</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('student');
+    if (user) {
+      const courses = getCourses();
+      const enrollments = getEnrollments().filter(e => e.studentId === user.id);
+      const enrolledCourses = enrollments.map(e => courses.find(c => c.id === e.courseId)).filter(Boolean);
+      const available = courses.filter(c => c.enrollStatus === 'Open' && !enrollments.find(e => e.courseId === c.id));
+      const semesters = [...new Set(courses.map(c => c.semester))];
+
+      document.getElementById('app').innerHTML = `
+        ${renderNavbar(user)}
+        <main class="main">
+          <div class="welcome-banner">
+            <h1>Welcome back, ${user.name}! 👋</h1>
+            <p>Here's your academic overview</p>
+          </div>
+          <div class="stat-grid mb-3">
+            <div class="card stat-card">
+              <div class="stat-icon student">📚</div>
+              <div><div class="stat-label">Enrolled Courses</div><div class="stat-value">${enrolledCourses.length}</div></div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon open">📖</div>
+              <div><div class="stat-label">Available Courses</div><div class="stat-value">${available.length}</div></div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon primary">📅</div>
+              <div><div class="stat-label">Semesters</div><div class="stat-value">${semesters.length}</div></div>
+            </div>
+          </div>
+          <div class="quick-actions">
+            <a href="catalog.html" class="btn btn-primary">📖 Browse Catalog</a>
+            <a href="my-courses.html" class="btn btn-outline">📚 My Courses</a>
+          </div>
+          <div class="section-header mt-3"><h2 class="section-title">Enrolled Courses</h2></div>
+          ${enrolledCourses.length === 0
+            ? '<div class="empty-state"><div class="icon">📭</div><p>No courses enrolled yet.</p></div>'
+            : `<div class="course-grid">${enrolledCourses.map(c => `
+              <div class="course-card">
+                <div class="course-card-header">
+                  <div class="course-card-icon">📘</div>
+                  ${statusBadge(c.enrollStatus)}
+                </div>
+                <h3>${c.title}</h3>
+                <p class="semester">${c.semester}</p>
+                <p class="details">${c.details}</p>
+              </div>`).join('')}</div>`}
+        </main>`;
+    }
+  </script>
+</body>
+</html>

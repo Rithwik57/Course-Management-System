@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Reports</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('admin');
+    if (user) {
+      const courses = getCourses();
+      const enrollments = getEnrollments();
+      const users = getUsers();
+      const courseData = courses.map(c => ({
+        ...c,
+        count: enrollments.filter(e => e.courseId === c.id).length
+      }));
+      const maxCount = Math.max(1, ...courseData.map(c => c.count));
+
+      document.getElementById('app').innerHTML = `
+        ${renderNavbar(user)}
+        <main class="main">
+          <h1 class="section-title mb-2">Reports & Analytics</h1>
+          <div class="stat-grid mb-3">
+            <div class="card stat-card">
+              <div class="stat-icon admin">👥</div>
+              <div><div class="stat-label">Total Users</div><div class="stat-value">${users.length}</div></div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon faculty">📚</div>
+              <div><div class="stat-label">Total Courses</div><div class="stat-value">${courses.length}</div></div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon student">📝</div>
+              <div><div class="stat-label">Total Enrollments</div><div class="stat-value">${enrollments.length}</div></div>
+            </div>
+          </div>
+          <div class="card mb-3">
+            <h2 class="section-title mb-2">Enrollment by Course</h2>
+            <div class="bar-chart">
+              ${courseData.map(c => `
+                <div class="bar-wrapper">
+                  <div class="bar-value">${c.count}</div>
+                  <div class="bar" style="height:${Math.max(4, (c.count/maxCount)*100)}%"></div>
+                  <div class="bar-label">${c.title}</div>
+                </div>`).join('')}
+            </div>
+          </div>
+          <div class="card">
+            <h2 class="section-title mb-2">Enrollment Details</h2>
+            <div class="table-wrapper"><table>
+              <thead><tr><th>Course</th><th>Semester</th><th>Status</th><th>Enrolled</th></tr></thead>
+              <tbody>${courseData.map(c => `<tr>
+                <td>${c.title}</td><td>${c.semester}</td>
+                <td>${statusBadge(c.enrollStatus)}</td><td>${c.count}</td>
+              </tr>`).join('')}</tbody>
+            </table></div>
+          </div>
+        </main>`;
+    }
+  </script>
+</body>
+</html>

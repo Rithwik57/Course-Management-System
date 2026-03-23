@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - My Courses</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('student');
+    if (user) {
+      const courses = getCourses();
+      const enrollments = getEnrollments().filter(e => e.studentId === user.id);
+      const enrolled = enrollments.map(e => courses.find(c => c.id === e.courseId)).filter(Boolean);
+
+      document.getElementById('app').innerHTML = `
+        ${renderNavbar(user)}
+        <main class="main">
+          <div class="section-header">
+            <h1 class="section-title">My Courses</h1>
+            <a href="catalog.html" class="btn btn-primary btn-sm">Browse Catalog</a>
+          </div>
+          ${enrolled.length === 0
+            ? '<div class="empty-state"><div class="icon">📭</div><p>You haven\'t enrolled in any courses yet.</p></div>'
+            : `<div class="course-grid">${enrolled.map(c => `
+              <div class="course-card">
+                <div class="course-card-header">
+                  <div class="course-card-icon">📘</div>
+                  ${statusBadge(c.enrollStatus)}
+                </div>
+                <h3>${c.title}</h3>
+                <p class="semester">${c.semester}</p>
+                <p class="details">${c.details}</p>
+                <div class="card-action">
+                  <a href="drop.html?id=${c.id}" class="btn btn-destructive btn-sm">Drop Course</a>
+                </div>
+              </div>`).join('')}</div>`}
+        </main>`;
+    }
+  </script>
+</body>
+</html>

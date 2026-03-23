@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Course Enrollments</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('faculty');
+    if (user) {
+      const courseId = parseInt(getUrlParam('id'));
+      const course = getCourses().find(c => c.id === courseId);
+      if (!course) { window.location.href = 'courses.html'; }
+      else {
+        const enrollments = getEnrollments().filter(e => e.courseId === courseId);
+        const users = getUsers();
+        const students = enrollments.map(e => users.find(u => u.id === e.studentId)).filter(Boolean);
+
+        document.getElementById('app').innerHTML = `
+          ${renderNavbar(user)}
+          <main class="main">
+            <a href="courses.html" class="btn btn-outline btn-sm mb-2">← Back to Courses</a>
+            <div class="card mb-2">
+              <h2>${course.title}</h2>
+              <p class="text-sm text-muted">${course.semester} · ${statusBadge(course.enrollStatus)}</p>
+            </div>
+            <div class="section-header"><h2 class="section-title">Enrolled Students (${students.length})</h2></div>
+            ${students.length === 0
+              ? '<div class="empty-state"><div class="icon">👥</div><p>No students enrolled.</p></div>'
+              : `<div class="card table-wrapper"><table>
+                <thead><tr><th>Name</th><th>Email</th><th>Enrolled Date</th></tr></thead>
+                <tbody>${students.map(s => `<tr>
+                  <td>${s.name}</td><td>${s.email}</td><td>Sep 1, 2025</td>
+                </tr>`).join('')}</tbody>
+              </table></div>`}
+          </main>`;
+      }
+    }
+  </script>
+</body>
+</html>

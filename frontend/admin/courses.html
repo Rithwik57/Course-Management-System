@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Admin Courses</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('admin');
+    if (user) render();
+
+    function render() {
+      const courses = getCourses();
+      const users = getUsers();
+      const enrollments = getEnrollments();
+      const search = document.getElementById('search')?.value?.toLowerCase() || '';
+      const semFilter = document.getElementById('semFilter')?.value || '';
+      const statusFilter = document.getElementById('statusFilter')?.value || '';
+
+      let filtered = courses;
+      if (search) filtered = filtered.filter(c => c.title.toLowerCase().includes(search));
+      if (semFilter) filtered = filtered.filter(c => c.semester === semFilter);
+      if (statusFilter) filtered = filtered.filter(c => c.enrollStatus === statusFilter);
+      const semesters = [...new Set(courses.map(c => c.semester))];
+
+      document.getElementById('app').innerHTML = `
+        ${renderNavbar(user)}
+        <main class="main">
+          <div class="section-header">
+            <h1 class="section-title">All Courses</h1>
+            <a href="course-form.html" class="btn btn-primary btn-sm">➕ Create Course</a>
+          </div>
+          <div class="filters">
+            <input type="text" id="search" class="form-input" placeholder="Search..." value="${search}" oninput="render()">
+            <select id="semFilter" class="form-select" onchange="render()">
+              <option value="">All Semesters</option>
+              ${semesters.map(s=>`<option value="${s}" ${semFilter===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+            <select id="statusFilter" class="form-select" onchange="render()">
+              <option value="">All Statuses</option>
+              <option value="Open" ${statusFilter==='Open'?'selected':''}>Open</option>
+              <option value="Closed" ${statusFilter==='Closed'?'selected':''}>Closed</option>
+              <option value="Waitlisted" ${statusFilter==='Waitlisted'?'selected':''}>Waitlisted</option>
+            </select>
+          </div>
+          <div class="card table-wrapper"><table>
+            <thead><tr><th>Title</th><th>Faculty</th><th>Semester</th><th>Status</th><th>Enrolled</th><th>Actions</th></tr></thead>
+            <tbody>${filtered.map(c => {
+              const fac = users.find(u => u.id === c.facultyId);
+              return `<tr>
+                <td>${c.title}</td><td>${fac ? fac.name : 'N/A'}</td><td>${c.semester}</td>
+                <td>${statusBadge(c.enrollStatus)}</td>
+                <td>${enrollments.filter(e => e.courseId === c.id).length}</td>
+                <td>
+                  <a href="course-form.html?id=${c.id}" class="btn btn-outline btn-sm">Edit</a>
+                  <a href="course-delete.html?id=${c.id}" class="btn btn-destructive btn-sm" style="margin-left:.25rem">Delete</a>
+                </td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table></div>
+        </main>`;
+    }
+  </script>
+</body>
+</html>

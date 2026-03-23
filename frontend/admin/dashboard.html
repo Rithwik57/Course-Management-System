@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Admin Dashboard</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('admin');
+    if (user) {
+      const users = getUsers();
+      const courses = getCourses();
+      const enrollments = getEnrollments();
+      const semesters = [...new Set(courses.map(c => c.semester))];
+
+      document.getElementById('app').innerHTML = `
+        ${renderNavbar(user)}
+        <main class="main">
+          <div class="welcome-banner">
+            <h1>Admin Dashboard 🛡️</h1>
+            <p>System overview and management</p>
+          </div>
+          <div class="stat-grid mb-3">
+            <div class="card stat-card">
+              <div class="stat-icon admin">👥</div>
+              <div><div class="stat-label">Total Users</div><div class="stat-value">${users.length}</div></div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon faculty">📚</div>
+              <div><div class="stat-label">Courses</div><div class="stat-value">${courses.length}</div></div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon student">📝</div>
+              <div><div class="stat-label">Enrollments</div><div class="stat-value">${enrollments.length}</div></div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-icon primary">📅</div>
+              <div><div class="stat-label">Semesters</div><div class="stat-value">${semesters.length}</div></div>
+            </div>
+          </div>
+          <div class="section-header"><h2 class="section-title">Quick Actions</h2></div>
+          <div class="course-grid mb-3">
+            <a href="users.html" class="card" style="text-decoration:none"><div class="stat-icon admin">👥</div><h3 style="margin-top:.5rem">Manage Users</h3><p class="text-sm text-muted">View and edit user roles</p></a>
+            <a href="courses.html" class="card" style="text-decoration:none"><div class="stat-icon faculty">📚</div><h3 style="margin-top:.5rem">Manage Courses</h3><p class="text-sm text-muted">Create, edit, delete courses</p></a>
+            <a href="reports.html" class="card" style="text-decoration:none"><div class="stat-icon open">📊</div><h3 style="margin-top:.5rem">Reports</h3><p class="text-sm text-muted">Enrollment analytics</p></a>
+            <a href="settings.html" class="card" style="text-decoration:none"><div class="stat-icon primary">⚙️</div><h3 style="margin-top:.5rem">Settings</h3><p class="text-sm text-muted">System configuration</p></a>
+          </div>
+          <div class="section-header"><h2 class="section-title">Recent Activity</h2></div>
+          <div class="card">
+            <div class="activity-item"><div class="activity-dot" style="background:var(--student)"></div><div><div class="activity-text">Alice Johnson enrolled in Cloud Computing</div><div class="activity-time">2 hours ago</div></div></div>
+            <div class="activity-item"><div class="activity-dot" style="background:var(--faculty)"></div><div><div class="activity-text">Dr. Robert Smith created Machine Learning</div><div class="activity-time">1 day ago</div></div></div>
+            <div class="activity-item"><div class="activity-dot" style="background:var(--admin)"></div><div><div class="activity-text">System settings updated</div><div class="activity-time">3 days ago</div></div></div>
+          </div>
+        </main>`;
+    }
+  </script>
+</body>
+</html>

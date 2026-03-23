@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Course Catalog</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('student');
+    if (user) render();
+
+    function render() {
+      const courses = getCourses();
+      const enrollments = getEnrollments().filter(e => e.studentId === user.id);
+      const search = document.getElementById('search')?.value?.toLowerCase() || '';
+      const semFilter = document.getElementById('semFilter')?.value || '';
+      const statusFilter = document.getElementById('statusFilter')?.value || '';
+
+      let filtered = courses;
+      if (search) filtered = filtered.filter(c => c.title.toLowerCase().includes(search));
+      if (semFilter) filtered = filtered.filter(c => c.semester === semFilter);
+      if (statusFilter) filtered = filtered.filter(c => c.enrollStatus === statusFilter);
+
+      const semesters = [...new Set(courses.map(c => c.semester))];
+
+      document.getElementById('app').innerHTML = `
+        ${renderNavbar(user)}
+        <main class="main">
+          <div class="section-header">
+            <h1 class="section-title">Course Catalog</h1>
+          </div>
+          <div class="filters">
+            <input type="text" id="search" class="form-input" placeholder="Search courses..." value="${search}" oninput="render()">
+            <select id="semFilter" class="form-select" onchange="render()">
+              <option value="">All Semesters</option>
+              ${semesters.map(s => `<option value="${s}" ${semFilter===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+            <select id="statusFilter" class="form-select" onchange="render()">
+              <option value="">All Statuses</option>
+              <option value="Open" ${statusFilter==='Open'?'selected':''}>Open</option>
+              <option value="Closed" ${statusFilter==='Closed'?'selected':''}>Closed</option>
+              <option value="Waitlisted" ${statusFilter==='Waitlisted'?'selected':''}>Waitlisted</option>
+            </select>
+          </div>
+          ${filtered.length === 0
+            ? '<div class="empty-state"><div class="icon">🔍</div><p>No courses match your filters.</p></div>'
+            : `<div class="course-grid">${filtered.map(c => {
+              const enrolled = enrollments.find(e => e.courseId === c.id);
+              return `<div class="course-card">
+                <div class="course-card-header">
+                  <div class="course-card-icon">📘</div>
+                  ${statusBadge(c.enrollStatus)}
+                </div>
+                <h3>${c.title}</h3>
+                <p class="semester">${c.semester}</p>
+                <p class="details">${c.details}</p>
+                <div class="card-action">
+                  ${enrolled ? '<span class="badge badge-open">Enrolled</span>'
+                    : `<a href="enroll.html?id=${c.id}" class="btn btn-primary btn-sm">Enroll</a>`}
+                </div>
+              </div>`;
+            }).join('')}</div>`}
+        </main>`;
+    }
+  </script>
+</body>
+</html>

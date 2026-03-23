@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Course Form</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('faculty');
+    if (user) {
+      const courseId = getUrlParam('id') ? parseInt(getUrlParam('id')) : null;
+      const course = courseId ? getCourses().find(c => c.id === courseId) : null;
+      const isEdit = !!course;
+
+      document.getElementById('app').innerHTML = `
+        ${renderNavbar(user)}
+        <main class="main">
+          <div class="confirm-wrapper">
+            <div class="card">
+              <h2>${isEdit ? 'Edit Course' : 'Create New Course'}</h2>
+              <form id="courseForm" style="margin-top:1rem">
+                <div class="form-group">
+                  <label class="form-label">Title</label>
+                  <input type="text" id="title" class="form-input" value="${isEdit ? course.title : ''}" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Details</label>
+                  <textarea id="details" class="form-input" rows="3" required>${isEdit ? course.details : ''}</textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Semester</label>
+                  <select id="semester" class="form-select">
+                    <option value="Fall 2025" ${isEdit && course.semester==='Fall 2025'?'selected':''}>Fall 2025</option>
+                    <option value="Spring 2026" ${isEdit && course.semester==='Spring 2026'?'selected':''}>Spring 2026</option>
+                    <option value="Fall 2026" ${isEdit && course.semester==='Fall 2026'?'selected':''}>Fall 2026</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Enrollment Status</label>
+                  <select id="enrollStatus" class="form-select">
+                    <option value="Open" ${isEdit && course.enrollStatus==='Open'?'selected':''}>Open</option>
+                    <option value="Closed" ${isEdit && course.enrollStatus==='Closed'?'selected':''}>Closed</option>
+                    <option value="Waitlisted" ${isEdit && course.enrollStatus==='Waitlisted'?'selected':''}>Waitlisted</option>
+                  </select>
+                </div>
+                <div class="confirm-actions">
+                  <button type="submit" class="btn btn-primary">${isEdit ? 'Save Changes' : 'Create Course'}</button>
+                  <a href="courses.html" class="btn btn-outline">Cancel</a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </main>`;
+
+      document.getElementById('courseForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const data = {
+          title: document.getElementById('title').value,
+          details: document.getElementById('details').value,
+          semester: document.getElementById('semester').value,
+          enrollStatus: document.getElementById('enrollStatus').value,
+          facultyId: user.id,
+        };
+        if (isEdit) { updateCourse(courseId, data); showToast('Course updated!'); }
+        else { addCourse(data); showToast('Course created!'); }
+        setTimeout(() => window.location.href = 'courses.html', 500);
+      });
+    }
+  </script>
+</body>
+</html>

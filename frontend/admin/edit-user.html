@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Edit User</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const admin = requireAuth('admin');
+    if (admin) {
+      const userId = parseInt(getUrlParam('id'));
+      const target = getUsers().find(u => u.id === userId);
+      if (!target) { window.location.href = 'users.html'; }
+      else {
+        document.getElementById('app').innerHTML = `
+          ${renderNavbar(admin)}
+          <main class="main">
+            <div class="confirm-wrapper">
+              <div class="card">
+                <h2>Edit User</h2>
+                <div class="form-group" style="margin-top:1rem">
+                  <label class="form-label">Name</label>
+                  <input type="text" class="form-input" value="${target.name}" disabled>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email</label>
+                  <input type="email" class="form-input" value="${target.email}" disabled>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Role</label>
+                  <select id="role" class="form-select">
+                    <option value="student" ${target.role==='student'?'selected':''}>Student</option>
+                    <option value="faculty" ${target.role==='faculty'?'selected':''}>Faculty</option>
+                    <option value="admin" ${target.role==='admin'?'selected':''}>Admin</option>
+                  </select>
+                </div>
+                <div class="confirm-actions">
+                  <button class="btn btn-primary" onclick="saveUser()">Save Changes</button>
+                  <a href="users.html" class="btn btn-outline">Cancel</a>
+                </div>
+              </div>
+            </div>
+          </main>`;
+      }
+    }
+    function saveUser() {
+      updateUser(parseInt(getUrlParam('id')), { role: document.getElementById('role').value });
+      showToast('User updated!');
+      setTimeout(() => window.location.href = 'users.html', 500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Delete Course</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('faculty');
+    if (user) {
+      const courseId = parseInt(getUrlParam('id'));
+      const course = getCourses().find(c => c.id === courseId);
+      if (!course) { window.location.href = 'courses.html'; }
+      else {
+        document.getElementById('app').innerHTML = `
+          ${renderNavbar(user)}
+          <main class="main">
+            <div class="confirm-wrapper">
+              <div class="card">
+                <h2>Delete Course</h2>
+                <p class="warning">⚠ You are about to delete "${course.title}". This cannot be undone.</p>
+                <div class="confirm-actions">
+                  <button class="btn btn-destructive" onclick="doDelete()">Delete Course</button>
+                  <a href="courses.html" class="btn btn-outline">Cancel</a>
+                </div>
+              </div>
+            </div>
+          </main>`;
+      }
+    }
+    function doDelete() {
+      deleteCourse(parseInt(getUrlParam('id')));
+      showToast('Course deleted.');
+      setTimeout(() => window.location.href = 'courses.html', 500);
+    }
+  </script>
+</body>
+</html>

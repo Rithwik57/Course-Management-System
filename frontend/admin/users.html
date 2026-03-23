@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Manage Users</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('admin');
+    if (user) render();
+
+    function render() {
+      const users = getUsers();
+      const search = document.getElementById('search')?.value?.toLowerCase() || '';
+      let filtered = users;
+      if (search) filtered = filtered.filter(u => u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search));
+
+      const counts = { student: users.filter(u=>u.role==='student').length, faculty: users.filter(u=>u.role==='faculty').length, admin: users.filter(u=>u.role==='admin').length };
+
+      document.getElementById('app').innerHTML = `
+        ${renderNavbar(user)}
+        <main class="main">
+          <div class="section-header">
+            <h1 class="section-title">Manage Users</h1>
+          </div>
+          <div class="flex gap-2 mb-2" style="flex-wrap:wrap">
+            <span class="badge badge-student" style="padding:.375rem .75rem;font-size:.8125rem">Students: ${counts.student}</span>
+            <span class="badge badge-faculty" style="padding:.375rem .75rem;font-size:.8125rem">Faculty: ${counts.faculty}</span>
+            <span class="badge badge-admin" style="padding:.375rem .75rem;font-size:.8125rem">Admins: ${counts.admin}</span>
+          </div>
+          <div class="filters">
+            <input type="text" id="search" class="form-input" placeholder="Search users..." value="${search}" oninput="render()">
+          </div>
+          <div class="card table-wrapper">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
+              <tbody>${filtered.map(u => `<tr>
+                <td>${u.name}</td><td>${u.email}</td>
+                <td>${roleBadge(u.role)}</td>
+                <td><a href="edit-user.html?id=${u.id}" class="btn btn-outline btn-sm">Edit Role</a></td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </main>`;
+    }
+  </script>
+</body>
+</html>

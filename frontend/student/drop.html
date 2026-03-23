@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Drop Course</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('student');
+    if (user) {
+      const courseId = parseInt(getUrlParam('id'));
+      const course = getCourses().find(c => c.id === courseId);
+      if (!course) { window.location.href = 'my-courses.html'; }
+      else {
+        document.getElementById('app').innerHTML = `
+          ${renderNavbar(user)}
+          <main class="main">
+            <div class="confirm-wrapper">
+              <div class="card">
+                <h2>Drop Course</h2>
+                <p class="warning">⚠ You are about to drop "${course.title}". This action cannot be undone.</p>
+                <div class="confirm-actions">
+                  <button class="btn btn-destructive" onclick="doDrop()">Yes, Drop Course</button>
+                  <a href="my-courses.html" class="btn btn-outline">Cancel</a>
+                </div>
+              </div>
+            </div>
+          </main>`;
+      }
+    }
+    function doDrop() {
+      dropStudent(user.id, parseInt(getUrlParam('id')));
+      showToast('Course dropped.');
+      setTimeout(() => window.location.href = 'my-courses.html', 500);
+    }
+  </script>
+</body>
+</html>

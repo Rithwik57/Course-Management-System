@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyCourses - Settings</title>
+  <link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../shared/app.js"></script>
+  <script>
+    const user = requireAuth('admin');
+    if (user) renderSettings();
+
+    function renderSettings() {
+      const settings = getSettings();
+      document.getElementById('app').innerHTML = `
+        ${renderNavbar(user)}
+        <main class="main">
+          <h1 class="section-title mb-2">System Settings</h1>
+          <div class="card">
+            <div class="toggle-row">
+              <div class="toggle-label">
+                <span>Allow Self-Enrollment</span>
+                <small>Students can enroll in courses themselves</small>
+              </div>
+              <button class="toggle ${settings.allowSelfEnrollment?'active':''}" onclick="toggleSetting('allowSelfEnrollment')"></button>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-label">
+                <span>Maintenance Mode</span>
+                <small>Disable access for non-admin users</small>
+              </div>
+              <button class="toggle ${settings.maintenanceMode?'active':''}" onclick="toggleSetting('maintenanceMode')"></button>
+            </div>
+            <div style="padding:1rem 0;border-bottom:1px solid var(--border)">
+              <label class="form-label">Max Enrollment per Course</label>
+              <input type="number" id="maxEnroll" class="form-input" style="max-width:120px" value="${settings.maxEnrollment}" min="1">
+            </div>
+            <div style="padding:1rem 0">
+              <label class="form-label">Active Semesters</label>
+              <div class="tag-list" id="semTags">
+                ${settings.activeSemesters.map(s => `<span class="tag">${s} <button onclick="removeSemester('${s}')">×</button></span>`).join('')}
+              </div>
+              <div class="flex items-center gap-2" style="margin-top:.75rem;gap:.5rem">
+                <input type="text" id="newSem" class="form-input" placeholder="e.g. Fall 2026" style="max-width:200px">
+                <button class="btn btn-outline btn-sm" onclick="addSemester()">Add</button>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:1rem" onclick="saveSettings()">Save Settings</button>
+          </div>
+        </main>`;
+    }
+
+    function toggleSetting(key) {
+      const s = getSettings();
+      s[key] = !s[key];
+      setSettingsState(s);
+      renderSettings();
+    }
+
+    function removeSemester(sem) {
+      const s = getSettings();
+      s.activeSemesters = s.activeSemesters.filter(x => x !== sem);
+      setSettingsState(s);
+      renderSettings();
+    }
+
+    function addSemester() {
+      const input = document.getElementById('newSem');
+      const val = input.value.trim();
+      if (!val) return;
+      const s = getSettings();
+      if (!s.activeSemesters.includes(val)) {
+        s.activeSemesters.push(val);
+        setSettingsState(s);
+      }
+      renderSettings();
+    }
+
+    function saveSettings() {
+      const s = getSettings();
+      s.maxEnrollment = parseInt(document.getElementById('maxEnroll').value) || 30;
+      setSettingsState(s);
+      showToast('Settings saved!');
+    }
+  </script>
+</body>
+</html>
