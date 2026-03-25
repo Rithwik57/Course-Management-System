@@ -12,30 +12,43 @@
   <script>
     const user = requireAuth('faculty');
     if (user) {
-      const courseId = parseInt(getUrlParam('id'));
-      const course = getCourses().find(c => c.id === courseId);
-      if (!course) { window.location.href = 'courses.html'; }
+      const courseId = getUrlParam('id');
+      if (!courseId) { window.location.href = 'courses.html'; }
       else {
-        document.getElementById('app').innerHTML = `
-          ${renderNavbar(user)}
-          <main class="main">
-            <div class="confirm-wrapper">
-              <div class="card">
-                <h2>Delete Course</h2>
-                <p class="warning">⚠ You are about to delete "${course.title}". This cannot be undone.</p>
-                <div class="confirm-actions">
-                  <button class="btn btn-destructive" onclick="doDelete()">Delete Course</button>
-                  <a href="courses.html" class="btn btn-outline">Cancel</a>
+        (async () => {
+          const res = await apiGet(`/courses/${courseId}`);
+          if (!res.success) { window.location.href = 'courses.html'; return; }
+          const course = res.data.course;
+
+          document.getElementById('app').innerHTML = `
+            ${renderNavbar(user)}
+            <main class="main">
+              <div class="confirm-wrapper">
+                <div class="card">
+                  <h2>Delete Course</h2>
+                  <p class="warning">⚠ You are about to delete "${course.title}". This cannot be undone.</p>
+                  <div id="deleteError" class="alert-error" style="display:none;margin-top:1rem"></div>
+                  <div class="confirm-actions">
+                    <button class="btn btn-destructive" onclick="doDelete()">Delete Course</button>
+                    <a href="courses.html" class="btn btn-outline">Cancel</a>
+                  </div>
                 </div>
               </div>
-            </div>
-          </main>`;
+            </main>`;
+        })();
       }
     }
-    function doDelete() {
-      deleteCourse(parseInt(getUrlParam('id')));
-      showToast('Course deleted.');
-      setTimeout(() => window.location.href = 'courses.html', 500);
+
+    async function doDelete() {
+      const courseId = getUrlParam('id');
+      const res = await apiDelete(`/courses/${courseId}`);
+      if (res.success) {
+        showToast('Course deleted.');
+        setTimeout(() => window.location.href = 'courses.html', 500);
+      } else {
+        const err = document.getElementById('deleteError');
+        if (err) { err.style.display = 'flex'; err.textContent = '⚠ ' + (res.message || 'Failed to delete course.'); }
+      }
     }
   </script>
 </body>

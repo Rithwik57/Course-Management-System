@@ -12,32 +12,40 @@
   <script>
     const user = requireAuth('faculty');
     if (user) {
-      const courses = getCourses().filter(c => c.facultyId === user.id);
-      const enrollments = getEnrollments();
+      (async () => {
+        const res = await apiGet('/courses/faculty/my');
+        const courses = res.success ? res.data.courses : [];
 
-      document.getElementById('app').innerHTML = `
-        ${renderNavbar(user)}
-        <main class="main">
-          <div class="section-header">
-            <h1 class="section-title">My Courses</h1>
-            <a href="course-form.html" class="btn btn-primary btn-sm">➕ Create New Course</a>
-          </div>
-          ${courses.length === 0
-            ? '<div class="empty-state"><div class="icon">📭</div><p>No courses created yet.</p></div>'
-            : `<div class="card table-wrapper"><table>
-              <thead><tr><th>Title</th><th>Semester</th><th>Status</th><th>Enrolled</th><th>Actions</th></tr></thead>
-              <tbody>${courses.map(c => `<tr>
-                <td>${c.title}</td><td>${c.semester}</td>
-                <td>${statusBadge(c.enrollStatus)}</td>
-                <td>${enrollments.filter(e => e.courseId === c.id).length}</td>
-                <td>
-                  <a href="course-form.html?id=${c.id}" class="btn btn-outline btn-sm">Edit</a>
-                  <a href="course-delete.html?id=${c.id}" class="btn btn-destructive btn-sm" style="margin-left:.25rem">Delete</a>
-                  <a href="course-enrollments.html?id=${c.id}" class="btn btn-secondary btn-sm" style="margin-left:.25rem">Enrollments</a>
-                </td>
-              </tr>`).join('')}</tbody>
-            </table></div>`}
-        </main>`;
+        // Get enrollment counts for each course in parallel
+        const countResults = await Promise.all(
+          courses.map(c => apiGet(`/courses/${c._id}/enrollment-count`))
+        );
+        const enrollCounts = {};
+        countResults.forEach((r, i) => {
+          enrollCounts[String(courses[i]._id)] = r.success ? r.data.count : 0;
+        });
+
+        document.getElementById('app').innerHTML = `
+          ${renderNavbar(user)}
+          <main class="main">
+            <div class="section-header">
+              <h1 class="section-title">My Courses</h1>
+            </div>
+            ${courses.length === 0
+              ? '<div class="empty-state"><div class="icon">📭</div><p>No courses assigned to you.</p></div>'
+              : `<div class="card table-wrapper"><table>
+                <thead><tr><th>Title</th><th>Semester</th><th>Status</th><th>Enrolled</th><th>Actions</th></tr></thead>
+                <tbody>${courses.map(c => `<tr>
+                  <td>${c.title}</td><td>${c.semester}</td>
+                  <td>${statusBadge(c.enrollStatus)}</td>
+                  <td>${enrollCounts[String(c._id)] || 0}</td>
+                  <td>
+                    <a href="course-enrollments.html?id=${c._id}" class="btn btn-secondary btn-sm">Enrollments</a>
+                  </td>
+                </tr>`).join('')}</tbody>
+              </table></div>`}
+          </main>`;
+      })();
     }
   </script>
 </body>
