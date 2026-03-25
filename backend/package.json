@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "This backend is built with **Node.js + Express + MongoDB (Mongoose)** using **MVC architecture** and **JWT authentication**.",
   "main": "server.js",
   "scripts": {
     "test": "echo \"No tests configured yet\"",
