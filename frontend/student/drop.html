@@ -12,9 +12,10 @@
   <script>
     const user = requireAuth('student');
     if (user) {
-      const courseId = parseInt(getUrlParam('id'));
-      const course = getCourses().find(c => c.id === courseId);
-      if (!course) { window.location.href = 'my-courses.html'; }
+      const enrollmentId = getUrlParam('id');
+      const courseTitle = getUrlParam('courseTitle') || 'this course';
+
+      if (!enrollmentId) { window.location.href = 'my-courses.html'; }
       else {
         document.getElementById('app').innerHTML = `
           ${renderNavbar(user)}
@@ -22,7 +23,8 @@
             <div class="confirm-wrapper">
               <div class="card">
                 <h2>Drop Course</h2>
-                <p class="warning">⚠ You are about to drop "${course.title}". This action cannot be undone.</p>
+                <p class="warning">⚠ You are about to drop "${courseTitle}". This action cannot be undone.</p>
+                <div id="dropError" class="alert-error" style="display:none;margin-top:1rem"></div>
                 <div class="confirm-actions">
                   <button class="btn btn-destructive" onclick="doDrop()">Yes, Drop Course</button>
                   <a href="my-courses.html" class="btn btn-outline">Cancel</a>
@@ -32,10 +34,17 @@
           </main>`;
       }
     }
-    function doDrop() {
-      dropStudent(user.id, parseInt(getUrlParam('id')));
-      showToast('Course dropped.');
-      setTimeout(() => window.location.href = 'my-courses.html', 500);
+
+    async function doDrop() {
+      const enrollmentId = getUrlParam('id');
+      const res = await apiPut(`/enrollments/drop/${enrollmentId}`, {});
+      if (res.success) {
+        showToast('Course dropped.');
+        setTimeout(() => window.location.href = 'my-courses.html', 500);
+      } else {
+        const err = document.getElementById('dropError');
+        if (err) { err.style.display = 'flex'; err.textContent = '⚠ ' + (res.message || 'Failed to drop course.'); }
+      }
     }
   </script>
 </body>

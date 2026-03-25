@@ -11,21 +11,36 @@
   <script src="../shared/app.js"></script>
   <script>
     const user = requireAuth('student');
-    if (user) render();
+    let allCourses = [];
+    let myEnrollments = [];
+
+    if (user) {
+      (async () => {
+        const [coursesRes, enrollRes] = await Promise.all([
+          apiGet('/courses'),
+          apiGet('/enrollments/my')
+        ]);
+        allCourses = coursesRes.success ? coursesRes.data.courses : [];
+        myEnrollments = enrollRes.success ? enrollRes.data.enrollments : [];
+        render();
+      })();
+    }
 
     function render() {
-      const courses = getCourses();
-      const enrollments = getEnrollments().filter(e => e.studentId === user.id);
       const search = document.getElementById('search')?.value?.toLowerCase() || '';
       const semFilter = document.getElementById('semFilter')?.value || '';
       const statusFilter = document.getElementById('statusFilter')?.value || '';
 
-      let filtered = courses;
+      const enrolledCourseIds = new Set(
+        myEnrollments.map(e => String(e.courseId?._id || e.courseId))
+      );
+
+      let filtered = allCourses;
       if (search) filtered = filtered.filter(c => c.title.toLowerCase().includes(search));
       if (semFilter) filtered = filtered.filter(c => c.semester === semFilter);
       if (statusFilter) filtered = filtered.filter(c => c.enrollStatus === statusFilter);
 
-      const semesters = [...new Set(courses.map(c => c.semester))];
+      const semesters = [...new Set(allCourses.map(c => c.semester))];
 
       document.getElementById('app').innerHTML = `
         ${renderNavbar(user)}
@@ -49,7 +64,7 @@
           ${filtered.length === 0
             ? '<div class="empty-state"><div class="icon">🔍</div><p>No courses match your filters.</p></div>'
             : `<div class="course-grid">${filtered.map(c => {
-              const enrolled = enrollments.find(e => e.courseId === c.id);
+              const isEnrolled = enrolledCourseIds.has(String(c._id));
               return `<div class="course-card">
                 <div class="course-card-header">
                   <div class="course-card-icon">📘</div>
@@ -59,8 +74,9 @@
                 <p class="semester">${c.semester}</p>
                 <p class="details">${c.details}</p>
                 <div class="card-action">
-                  ${enrolled ? '<span class="badge badge-open">Enrolled</span>'
-                    : `<a href="enroll.html?id=${c.id}" class="btn btn-primary btn-sm">Enroll</a>`}
+                  ${isEnrolled
+                    ? '<span class="badge badge-open">Enrolled</span>'
+                    : `<a href="enroll.html?id=${c._id}" class="btn btn-primary btn-sm">Enroll</a>`}
                 </div>
               </div>`;
             }).join('')}</div>`}

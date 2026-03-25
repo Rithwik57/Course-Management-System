@@ -12,33 +12,37 @@
   <script>
     const user = requireAuth('student');
     if (user) {
-      const courses = getCourses();
-      const enrollments = getEnrollments().filter(e => e.studentId === user.id);
-      const enrolled = enrollments.map(e => courses.find(c => c.id === e.courseId)).filter(Boolean);
+      (async () => {
+        const res = await apiGet('/enrollments/my');
+        const enrollments = res.success ? res.data.enrollments : [];
 
-      document.getElementById('app').innerHTML = `
-        ${renderNavbar(user)}
-        <main class="main">
-          <div class="section-header">
-            <h1 class="section-title">My Courses</h1>
-            <a href="catalog.html" class="btn btn-primary btn-sm">Browse Catalog</a>
-          </div>
-          ${enrolled.length === 0
-            ? '<div class="empty-state"><div class="icon">📭</div><p>You haven\'t enrolled in any courses yet.</p></div>'
-            : `<div class="course-grid">${enrolled.map(c => `
-              <div class="course-card">
-                <div class="course-card-header">
-                  <div class="course-card-icon">📘</div>
-                  ${statusBadge(c.enrollStatus)}
-                </div>
-                <h3>${c.title}</h3>
-                <p class="semester">${c.semester}</p>
-                <p class="details">${c.details}</p>
-                <div class="card-action">
-                  <a href="drop.html?id=${c.id}" class="btn btn-destructive btn-sm">Drop Course</a>
-                </div>
-              </div>`).join('')}</div>`}
-        </main>`;
+        document.getElementById('app').innerHTML = `
+          ${renderNavbar(user)}
+          <main class="main">
+            <div class="section-header">
+              <h1 class="section-title">My Courses</h1>
+              <a href="catalog.html" class="btn btn-primary btn-sm">Browse Catalog</a>
+            </div>
+            ${enrollments.length === 0
+              ? '<div class="empty-state"><div class="icon">📭</div><p>You haven\'t enrolled in any courses yet.</p></div>'
+              : `<div class="course-grid">${enrollments.map(e => {
+                const c = e.courseId;
+                if (!c) return '';
+                return `<div class="course-card">
+                  <div class="course-card-header">
+                    <div class="course-card-icon">📘</div>
+                    ${statusBadge(c.enrollStatus)}
+                  </div>
+                  <h3>${c.title}</h3>
+                  <p class="semester">${c.semester}</p>
+                  <p class="details">${c.details}</p>
+                  <div class="card-action">
+                    <a href="drop.html?id=${e._id}&courseTitle=${encodeURIComponent(c.title)}" class="btn btn-destructive btn-sm">Drop Course</a>
+                  </div>
+                </div>`;
+              }).join('')}</div>`}
+          </main>`;
+      })();
     }
   </script>
 </body>

@@ -12,35 +12,48 @@
   <script>
     const user = requireAuth('student');
     if (user) {
-      const courseId = parseInt(getUrlParam('id'));
-      const course = getCourses().find(c => c.id === courseId);
-      if (!course) { window.location.href = 'catalog.html'; }
+      const courseId = getUrlParam('id');
+      if (!courseId) { window.location.href = 'catalog.html'; }
       else {
-        document.getElementById('app').innerHTML = `
-          ${renderNavbar(user)}
-          <main class="main">
-            <div class="confirm-wrapper">
-              <div class="card">
-                <h2>Confirm Enrollment</h2>
-                <p style="margin-top:.5rem;color:var(--muted-fg)">You are about to enroll in:</p>
-                <div class="card" style="margin-top:1rem;background:var(--secondary)">
-                  <h3>${course.title}</h3>
-                  <p class="text-sm text-muted">${course.semester} · ${course.enrollStatus}</p>
-                  <p class="text-sm" style="margin-top:.5rem">${course.details}</p>
-                </div>
-                <div class="confirm-actions">
-                  <button class="btn btn-primary" onclick="doEnroll()">Confirm Enrollment</button>
-                  <a href="catalog.html" class="btn btn-outline">Cancel</a>
+        (async () => {
+          const res = await apiGet(`/courses/${courseId}`);
+          if (!res.success) { window.location.href = 'catalog.html'; return; }
+          const course = res.data.course;
+
+          document.getElementById('app').innerHTML = `
+            ${renderNavbar(user)}
+            <main class="main">
+              <div class="confirm-wrapper">
+                <div class="card">
+                  <h2>Confirm Enrollment</h2>
+                  <p style="margin-top:.5rem;color:var(--muted-fg)">You are about to enroll in:</p>
+                  <div class="card" style="margin-top:1rem;background:var(--secondary)">
+                    <h3>${course.title}</h3>
+                    <p class="text-sm text-muted">${course.semester} · ${course.enrollStatus}</p>
+                    <p class="text-sm" style="margin-top:.5rem">${course.details}</p>
+                  </div>
+                  <div id="enrollError" class="alert-error" style="display:none;margin-top:1rem"></div>
+                  <div class="confirm-actions">
+                    <button class="btn btn-primary" onclick="doEnroll()">Confirm Enrollment</button>
+                    <a href="catalog.html" class="btn btn-outline">Cancel</a>
+                  </div>
                 </div>
               </div>
-            </div>
-          </main>`;
+            </main>`;
+        })();
       }
     }
-    function doEnroll() {
-      enrollStudent(user.id, parseInt(getUrlParam('id')));
-      showToast('Successfully enrolled!');
-      setTimeout(() => window.location.href = 'my-courses.html', 500);
+
+    async function doEnroll() {
+      const courseId = getUrlParam('id');
+      const res = await apiPost('/enrollments', { courseId });
+      if (res.success) {
+        showToast('Successfully enrolled!');
+        setTimeout(() => window.location.href = 'my-courses.html', 500);
+      } else {
+        const err = document.getElementById('enrollError');
+        if (err) { err.style.display = 'flex'; err.textContent = '⚠ ' + (res.message || 'Enrollment failed.'); }
+      }
     }
   </script>
 </body>
