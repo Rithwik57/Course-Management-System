@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -16,7 +17,20 @@ app.use(express.json());
 
 // Simple health endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ message: 'Course Enrollment API is running' });
+  if (mongoose.connection.readyState === 1) {
+    return res.status(200).json({
+      success: true,
+      data: {
+        status: 'OK',
+        db: 'connected',
+      },
+    });
+  }
+
+  return res.status(503).json({
+    success: false,
+    message: 'Database not connected',
+  });
 });
 
 // Feature route groups

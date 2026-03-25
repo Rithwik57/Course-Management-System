@@ -36,9 +36,8 @@ const settingsSchema = new mongoose.Schema(
   }
 );
 
-settingsSchema.pre('save', function preSave(next) {
+settingsSchema.pre('save', function preSave() {
   this.updatedAt = new Date();
-  next();
 });
 
 settingsSchema.statics.getSystemSettings = async function getSystemSettings() {

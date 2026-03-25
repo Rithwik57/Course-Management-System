@@ -158,10 +158,8 @@ const seedSettings = async () => {
   console.log('Seeded 1 settings document.');
 };
 
-const runSeed = async () => {
+const seedDatabase = async () => {
   try {
-    await connectDB();
-
     const users = await seedUsers();
     const faculty = users.find((user) => user.role === 'faculty') || (await User.findOne({ role: 'faculty' }));
     const student = users.find((user) => user.role === 'student') || (await User.findOne({ role: 'student' }));
@@ -171,11 +169,26 @@ const runSeed = async () => {
     await seedSettings();
 
     console.log('Seeding completed successfully.');
-    process.exit(0);
   } catch (error) {
     console.error('Seeding failed:', error.message);
+    throw error;
+  }
+};
+
+const runSeed = async () => {
+  try {
+    await connectDB();
+    await seedDatabase();
+    process.exit(0);
+  } catch (error) {
     process.exit(1);
   }
 };
 
-runSeed();
+if (require.main === module) {
+  runSeed();
+}
+
+module.exports = {
+  seedDatabase,
+};
