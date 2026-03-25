@@ -36,9 +36,9 @@
         <div class="divider"></div>
         <p class="quick-login-label">Quick Login</p>
         <div class="quick-login">
-          <button class="btn btn-student btn-sm" onclick="quickLogin('alice@uni.edu','student123')">Student</button>
-          <button class="btn btn-faculty btn-sm" onclick="quickLogin('robert@uni.edu','faculty123')">Faculty</button>
-          <button class="btn btn-admin btn-sm" onclick="quickLogin('carol@uni.edu','admin123')">Admin</button>
+          <button class="btn btn-student btn-sm" onclick="quickLogin('student@test.com','123456')">Student</button>
+          <button class="btn btn-faculty btn-sm" onclick="quickLogin('faculty@test.com','123456')">Faculty</button>
+          <button class="btn btn-admin btn-sm" onclick="quickLogin('admin@vcc.com','Admin@123')">Admin</button>
         </div>
         <p class="text-center text-sm text-muted" style="margin-top:1.25rem">
           Don't have an account? <a href="register.html" class="link-primary">Register</a>
@@ -50,26 +50,38 @@
       </div>
     </div>
   </div>
-  <script src="shared/app.js"></script>
-  <script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+  <script src="./shared/app.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
       e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const user = login(email, password);
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      const user = await login(email, password);
+
       if (!user) {
-        const err = document.getElementById('error');
-        err.style.display = 'flex';
-        err.textContent = '⚠ Invalid email or password.';
+        const err = document.getElementById("error");
+        err.style.display = "flex";
+        err.textContent = "⚠ Invalid email or password.";
         return;
       }
+
       window.location.href = getDashboardPath(user.role);
     });
+  });
 
-    function quickLogin(em, pw) {
-      const user = login(em, pw);
-      if (user) window.location.href = getDashboardPath(user.role);
+  async function quickLogin(em, pw) {
+    const user = await login(em, pw);
+    if (user) {
+      window.location.href = getDashboardPath(user.role);
+    } else {
+      const err = document.getElementById("error");
+      err.style.display = "flex";
+      err.textContent = "⚠ Invalid quick login credentials.";
     }
-  </script>
+  }
+</script>
 </body>
 </html>

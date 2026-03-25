@@ -42,20 +42,40 @@
     </div>
   </div>
   <script src="shared/app.js"></script>
-  <script>
-    document.getElementById('regForm').addEventListener('submit', function(e) {
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("regForm").addEventListener("submit", async function (e) {
       e.preventDefault();
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const pw = document.getElementById('password').value;
-      const confirm = document.getElementById('confirm').value;
-      const err = document.getElementById('error');
-      if (pw !== confirm) { err.style.display='flex'; err.textContent='⚠ Passwords do not match.'; return; }
-      if (pw.length < 6) { err.style.display='flex'; err.textContent='⚠ Password must be at least 6 characters.'; return; }
-      const user = register(name, email, pw);
-      if (!user) { err.style.display='flex'; err.textContent='⚠ Email already registered.'; return; }
-      window.location.href = 'student/dashboard.html';
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const pw = document.getElementById("password").value;
+      const confirm = document.getElementById("confirm").value;
+      const err = document.getElementById("error");
+
+      if (pw !== confirm) {
+        err.style.display = "flex";
+        err.textContent = "⚠ Passwords do not match.";
+        return;
+      }
+
+      if (pw.length < 6) {
+        err.style.display = "flex";
+        err.textContent = "⚠ Password must be at least 6 characters.";
+        return;
+      }
+
+      const user = await register(name, email, pw);
+
+      if (!user) {
+        err.style.display = "flex";
+        err.textContent = "⚠ Email already registered or invalid.";
+        return;
+      }
+
+      window.location.href = "index.html";
     });
-  </script>
+  });
+</script>
 </body>
 </html>
