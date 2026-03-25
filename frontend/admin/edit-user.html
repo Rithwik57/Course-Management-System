@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MyCourses - Edit User</title>
+  <title>MyCourses - Disable User</title>
   <link rel="stylesheet" href="../shared/style.css">
 </head>
 <body>
@@ -12,45 +12,55 @@
   <script>
     const admin = requireAuth('admin');
     if (admin) {
-      const userId = parseInt(getUrlParam('id'));
-      const target = getUsers().find(u => u.id === userId);
-      if (!target) { window.location.href = 'users.html'; }
+      const userId = getUrlParam('id');
+      if (!userId) { window.location.href = 'users.html'; }
       else {
-        document.getElementById('app').innerHTML = `
-          ${renderNavbar(admin)}
-          <main class="main">
-            <div class="confirm-wrapper">
-              <div class="card">
-                <h2>Edit User</h2>
-                <div class="form-group" style="margin-top:1rem">
-                  <label class="form-label">Name</label>
-                  <input type="text" class="form-input" value="${target.name}" disabled>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Email</label>
-                  <input type="email" class="form-input" value="${target.email}" disabled>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Role</label>
-                  <select id="role" class="form-select">
-                    <option value="student" ${target.role==='student'?'selected':''}>Student</option>
-                    <option value="faculty" ${target.role==='faculty'?'selected':''}>Faculty</option>
-                    <option value="admin" ${target.role==='admin'?'selected':''}>Admin</option>
-                  </select>
-                </div>
-                <div class="confirm-actions">
-                  <button class="btn btn-primary" onclick="saveUser()">Save Changes</button>
-                  <a href="users.html" class="btn btn-outline">Cancel</a>
+        (async () => {
+          const res = await apiGet('/users');
+          const target = res.success ? res.data.users.find(u => u._id === userId) : null;
+          if (!target) { window.location.href = 'users.html'; return; }
+
+          document.getElementById('app').innerHTML = `
+            ${renderNavbar(admin)}
+            <main class="main">
+              <div class="confirm-wrapper">
+                <div class="card">
+                  <h2>Disable User</h2>
+                  <div class="form-group" style="margin-top:1rem">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" value="${target.name}" disabled>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" value="${target.email}" disabled>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <input type="text" class="form-input" value="${target.role}" disabled>
+                  </div>
+                  <p class="warning" style="margin-top:1rem">⚠ Disabling this user will prevent them from logging in.</p>
+                  <div id="editError" class="alert-error" style="display:none;margin-top:1rem"></div>
+                  <div class="confirm-actions">
+                    <button class="btn btn-destructive" onclick="disableUser()">Disable User</button>
+                    <a href="users.html" class="btn btn-outline">Cancel</a>
+                  </div>
                 </div>
               </div>
-            </div>
-          </main>`;
+            </main>`;
+        })();
       }
     }
-    function saveUser() {
-      updateUser(parseInt(getUrlParam('id')), { role: document.getElementById('role').value });
-      showToast('User updated!');
-      setTimeout(() => window.location.href = 'users.html', 500);
+
+    async function disableUser() {
+      const userId = getUrlParam('id');
+      const res = await apiPut(`/users/${userId}`, {});
+      if (res.success) {
+        showToast('User disabled.');
+        setTimeout(() => window.location.href = 'users.html', 500);
+      } else {
+        const err = document.getElementById('editError');
+        if (err) { err.style.display = 'flex'; err.textContent = '⚠ ' + (res.message || 'Failed to disable user.'); }
+      }
     }
   </script>
 </body>

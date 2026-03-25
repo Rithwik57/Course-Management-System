@@ -11,15 +11,28 @@
   <script src="../shared/app.js"></script>
   <script>
     const user = requireAuth('admin');
-    if (user) render();
+    let allUsers = [];
+
+    if (user) {
+      (async () => {
+        const res = await apiGet('/users');
+        allUsers = res.success ? res.data.users : [];
+        render();
+      })();
+    }
 
     function render() {
-      const users = getUsers();
       const search = document.getElementById('search')?.value?.toLowerCase() || '';
-      let filtered = users;
-      if (search) filtered = filtered.filter(u => u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search));
+      let filtered = allUsers;
+      if (search) filtered = filtered.filter(u =>
+        u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search)
+      );
 
-      const counts = { student: users.filter(u=>u.role==='student').length, faculty: users.filter(u=>u.role==='faculty').length, admin: users.filter(u=>u.role==='admin').length };
+      const counts = {
+        student: allUsers.filter(u => u.role === 'student').length,
+        faculty: allUsers.filter(u => u.role === 'faculty').length,
+        admin: allUsers.filter(u => u.role === 'admin').length
+      };
 
       document.getElementById('app').innerHTML = `
         ${renderNavbar(user)}
@@ -37,11 +50,14 @@
           </div>
           <div class="card table-wrapper">
             <table>
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody>${filtered.map(u => `<tr>
                 <td>${u.name}</td><td>${u.email}</td>
                 <td>${roleBadge(u.role)}</td>
-                <td><a href="edit-user.html?id=${u.id}" class="btn btn-outline btn-sm">Edit Role</a></td>
+                <td><span class="badge ${u.isActive ? 'badge-open' : 'badge-closed'}">${u.isActive ? 'Active' : 'Disabled'}</span></td>
+                <td>${u.isActive
+                  ? `<a href="edit-user.html?id=${u._id}" class="btn btn-outline btn-sm">Disable</a>`
+                  : '<span class="text-muted text-sm">Disabled</span>'}</td>
               </tr>`).join('')}</tbody>
             </table>
           </div>

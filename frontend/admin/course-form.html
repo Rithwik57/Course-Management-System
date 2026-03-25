@@ -11,64 +11,104 @@
   <script src="../shared/app.js"></script>
   <script>
     const user = requireAuth('admin');
+    let course = null;
+    let facultyList = [];
+
     if (user) {
-      const courseId = getUrlParam('id') ? parseInt(getUrlParam('id')) : null;
-      const course = courseId ? getCourses().find(c => c.id === courseId) : null;
-      const isEdit = !!course;
+      const courseId = getUrlParam('id');
 
-      document.getElementById('app').innerHTML = `
-        ${renderNavbar(user)}
-        <main class="main">
-          <div class="confirm-wrapper">
-            <div class="card">
-              <h2>${isEdit ? 'Edit Course' : 'Create New Course'}</h2>
-              <form id="courseForm" style="margin-top:1rem">
-                <div class="form-group">
-                  <label class="form-label">Title</label>
-                  <input type="text" id="title" class="form-input" value="${isEdit ? course.title : ''}" required>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Details</label>
-                  <textarea id="details" class="form-input" rows="3" required>${isEdit ? course.details : ''}</textarea>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Semester</label>
-                  <select id="semester" class="form-select">
-                    <option value="Fall 2025" ${isEdit && course.semester==='Fall 2025'?'selected':''}>Fall 2025</option>
-                    <option value="Spring 2026" ${isEdit && course.semester==='Spring 2026'?'selected':''}>Spring 2026</option>
-                    <option value="Fall 2026" ${isEdit && course.semester==='Fall 2026'?'selected':''}>Fall 2026</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Enrollment Status</label>
-                  <select id="enrollStatus" class="form-select">
-                    <option value="Open" ${isEdit && course.enrollStatus==='Open'?'selected':''}>Open</option>
-                    <option value="Closed" ${isEdit && course.enrollStatus==='Closed'?'selected':''}>Closed</option>
-                    <option value="Waitlisted" ${isEdit && course.enrollStatus==='Waitlisted'?'selected':''}>Waitlisted</option>
-                  </select>
-                </div>
-                <div class="confirm-actions">
-                  <button type="submit" class="btn btn-primary">${isEdit ? 'Save Changes' : 'Create Course'}</button>
-                  <a href="courses.html" class="btn btn-outline">Cancel</a>
-                </div>
-              </form>
+      (async () => {
+        const [settingsRes, usersRes] = await Promise.all([
+          apiGet('/settings'),
+          apiGet('/users')
+        ]);
+
+        const settings = settingsRes.success ? settingsRes.data.settings : null;
+        const semesters = settings?.activeSemesters?.length
+          ? settings.activeSemesters
+          : ['Fall 2025', 'Spring 2026', 'Fall 2026'];
+
+        const allUsers = usersRes.success ? usersRes.data.users : [];
+        facultyList = allUsers.filter(u => u.role === 'faculty');
+
+        if (courseId) {
+          const courseRes = await apiGet(`/courses/${courseId}`);
+          if (courseRes.success) course = courseRes.data.course;
+        }
+
+        const isEdit = !!course;
+
+        document.getElementById('app').innerHTML = `
+          ${renderNavbar(user)}
+          <main class="main">
+            <div class="confirm-wrapper">
+              <div class="card">
+                <h2>${isEdit ? 'Edit Course' : 'Create New Course'}</h2>
+                <div id="formError" class="alert-error" style="display:none;margin-bottom:1rem"></div>
+                <form id="courseForm" style="margin-top:1rem">
+                  <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" id="title" class="form-input" value="${isEdit ? course.title : ''}" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Details</label>
+                    <textarea id="details" class="form-input" rows="3">${isEdit ? course.details : ''}</textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Semester</label>
+                    <select id="semester" class="form-select">
+                      ${semesters.map(s => `<option value="${s}" ${isEdit && course.semester===s?'selected':''}>${s}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Enrollment Status</label>
+                    <select id="enrollStatus" class="form-select">
+                      <option value="Open" ${isEdit && course.enrollStatus==='Open'?'selected':''}>Open</option>
+                      <option value="Closed" ${isEdit && course.enrollStatus==='Closed'?'selected':''}>Closed</option>
+                      <option value="Waitlisted" ${isEdit && course.enrollStatus==='Waitlisted'?'selected':''}>Waitlisted</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Faculty (optional)</label>
+                    <select id="facultyId" class="form-select">
+                      <option value="">-- No Faculty Assigned --</option>
+                      ${facultyList.map(f => `<option value="${f._id}" ${isEdit && String(course.facultyId)===String(f._id)?'selected':''}>${f.name}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="confirm-actions">
+                    <button type="submit" class="btn btn-primary">${isEdit ? 'Save Changes' : 'Create Course'}</button>
+                    <a href="courses.html" class="btn btn-outline">Cancel</a>
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
-        </main>`;
+          </main>`;
 
-      document.getElementById('courseForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const data = {
-          title: document.getElementById('title').value,
-          details: document.getElementById('details').value,
-          semester: document.getElementById('semester').value,
-          enrollStatus: document.getElementById('enrollStatus').value,
-          facultyId: course ? course.facultyId : user.id,
-        };
-        if (isEdit) { updateCourse(courseId, data); showToast('Course updated!'); }
-        else { addCourse(data); showToast('Course created!'); }
-        setTimeout(() => window.location.href = 'courses.html', 500);
-      });
+        document.getElementById('courseForm').addEventListener('submit', async function(e) {
+          e.preventDefault();
+          const facultyIdVal = document.getElementById('facultyId').value;
+          const data = {
+            title: document.getElementById('title').value,
+            details: document.getElementById('details').value,
+            semester: document.getElementById('semester').value,
+            enrollStatus: document.getElementById('enrollStatus').value,
+          };
+          if (facultyIdVal) data.facultyId = facultyIdVal;
+
+          const res = isEdit
+            ? await apiPut(`/courses/${courseId}`, data)
+            : await apiPost('/courses', data);
+
+          if (res.success) {
+            showToast(isEdit ? 'Course updated!' : 'Course created!');
+            setTimeout(() => window.location.href = 'courses.html', 500);
+          } else {
+            const errEl = document.getElementById('formError');
+            errEl.style.display = 'flex';
+            errEl.textContent = '⚠ ' + (res.message || 'Operation failed.');
+          }
+        });
+      })();
     }
   </script>
 </body>

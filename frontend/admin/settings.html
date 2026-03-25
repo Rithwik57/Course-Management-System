@@ -11,10 +11,20 @@
   <script src="../shared/app.js"></script>
   <script>
     const user = requireAuth('admin');
-    if (user) renderSettings();
+    let settings = null;
+
+    if (user) {
+      (async () => {
+        const res = await apiGet('/settings');
+        settings = res.success
+          ? { ...res.data.settings }
+          : { allowSelfEnrollment: true, maintenanceMode: false, maxEnrollment: 60, activeSemesters: [] };
+        renderSettings();
+      })();
+    }
 
     function renderSettings() {
-      const settings = getSettings();
+      if (!settings) return;
       document.getElementById('app').innerHTML = `
         ${renderNavbar(user)}
         <main class="main">
@@ -48,22 +58,19 @@
                 <button class="btn btn-outline btn-sm" onclick="addSemester()">Add</button>
               </div>
             </div>
+            <div id="settingsError" class="alert-error" style="display:none;margin-top:1rem"></div>
             <button class="btn btn-primary" style="margin-top:1rem" onclick="saveSettings()">Save Settings</button>
           </div>
         </main>`;
     }
 
     function toggleSetting(key) {
-      const s = getSettings();
-      s[key] = !s[key];
-      setSettingsState(s);
+      settings[key] = !settings[key];
       renderSettings();
     }
 
     function removeSemester(sem) {
-      const s = getSettings();
-      s.activeSemesters = s.activeSemesters.filter(x => x !== sem);
-      setSettingsState(s);
+      settings.activeSemesters = settings.activeSemesters.filter(x => x !== sem);
       renderSettings();
     }
 
@@ -71,19 +78,31 @@
       const input = document.getElementById('newSem');
       const val = input.value.trim();
       if (!val) return;
-      const s = getSettings();
-      if (!s.activeSemesters.includes(val)) {
-        s.activeSemesters.push(val);
-        setSettingsState(s);
+      if (!settings.activeSemesters.includes(val)) {
+        settings.activeSemesters.push(val);
       }
       renderSettings();
     }
 
-    function saveSettings() {
-      const s = getSettings();
-      s.maxEnrollment = parseInt(document.getElementById('maxEnroll').value) || 30;
-      setSettingsState(s);
-      showToast('Settings saved!');
+    async function saveSettings() {
+      const maxEnroll = parseInt(document.getElementById('maxEnroll').value) || 60;
+      settings.maxEnrollment = maxEnroll;
+
+      const res = await apiPut('/settings', {
+        allowSelfEnrollment: settings.allowSelfEnrollment,
+        maintenanceMode: settings.maintenanceMode,
+        maxEnrollment: settings.maxEnrollment,
+        activeSemesters: settings.activeSemesters
+      });
+
+      if (res.success) {
+        settings = { ...res.data.settings };
+        showToast('Settings saved!');
+        renderSettings();
+      } else {
+        const err = document.getElementById('settingsError');
+        if (err) { err.style.display = 'flex'; err.textContent = '⚠ ' + (res.message || 'Failed to save settings.'); }
+      }
     }
   </script>
 </body>

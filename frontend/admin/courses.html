@@ -11,21 +11,36 @@
   <script src="../shared/app.js"></script>
   <script>
     const user = requireAuth('admin');
-    if (user) render();
+    let allCourses = [];
+    let enrollCounts = {};
+
+    if (user) {
+      (async () => {
+        const res = await apiGet('/courses');
+        allCourses = res.success ? res.data.courses : [];
+
+        // Get enrollment counts in parallel
+        const countResults = await Promise.all(
+          allCourses.map(c => apiGet(`/courses/${c._id}/enrollment-count`))
+        );
+        countResults.forEach((r, i) => {
+          enrollCounts[String(allCourses[i]._id)] = r.success ? r.data.count : 0;
+        });
+
+        render();
+      })();
+    }
 
     function render() {
-      const courses = getCourses();
-      const users = getUsers();
-      const enrollments = getEnrollments();
       const search = document.getElementById('search')?.value?.toLowerCase() || '';
       const semFilter = document.getElementById('semFilter')?.value || '';
       const statusFilter = document.getElementById('statusFilter')?.value || '';
 
-      let filtered = courses;
+      let filtered = allCourses;
       if (search) filtered = filtered.filter(c => c.title.toLowerCase().includes(search));
       if (semFilter) filtered = filtered.filter(c => c.semester === semFilter);
       if (statusFilter) filtered = filtered.filter(c => c.enrollStatus === statusFilter);
-      const semesters = [...new Set(courses.map(c => c.semester))];
+      const semesters = [...new Set(allCourses.map(c => c.semester))];
 
       document.getElementById('app').innerHTML = `
         ${renderNavbar(user)}
@@ -38,7 +53,7 @@
             <input type="text" id="search" class="form-input" placeholder="Search..." value="${search}" oninput="render()">
             <select id="semFilter" class="form-select" onchange="render()">
               <option value="">All Semesters</option>
-              ${semesters.map(s=>`<option value="${s}" ${semFilter===s?'selected':''}>${s}</option>`).join('')}
+              ${semesters.map(s => `<option value="${s}" ${semFilter===s?'selected':''}>${s}</option>`).join('')}
             </select>
             <select id="statusFilter" class="form-select" onchange="render()">
               <option value="">All Statuses</option>
@@ -49,18 +64,17 @@
           </div>
           <div class="card table-wrapper"><table>
             <thead><tr><th>Title</th><th>Faculty</th><th>Semester</th><th>Status</th><th>Enrolled</th><th>Actions</th></tr></thead>
-            <tbody>${filtered.map(c => {
-              const fac = users.find(u => u.id === c.facultyId);
-              return `<tr>
-                <td>${c.title}</td><td>${fac ? fac.name : 'N/A'}</td><td>${c.semester}</td>
-                <td>${statusBadge(c.enrollStatus)}</td>
-                <td>${enrollments.filter(e => e.courseId === c.id).length}</td>
-                <td>
-                  <a href="course-form.html?id=${c.id}" class="btn btn-outline btn-sm">Edit</a>
-                  <a href="course-delete.html?id=${c.id}" class="btn btn-destructive btn-sm" style="margin-left:.25rem">Delete</a>
-                </td>
-              </tr>`;
-            }).join('')}</tbody>
+            <tbody>${filtered.map(c => `<tr>
+              <td>${c.title}</td>
+              <td>${c.facultyName || 'N/A'}</td>
+              <td>${c.semester}</td>
+              <td>${statusBadge(c.enrollStatus)}</td>
+              <td>${enrollCounts[String(c._id)] ?? 0}</td>
+              <td>
+                <a href="course-form.html?id=${c._id}" class="btn btn-outline btn-sm">Edit</a>
+                <a href="course-delete.html?id=${c._id}" class="btn btn-destructive btn-sm" style="margin-left:.25rem">Delete</a>
+              </td>
+            </tr>`).join('')}</tbody>
           </table></div>
         </main>`;
     }
