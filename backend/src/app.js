@@ -16,6 +16,16 @@ const path = require('path');
 app.use(cors());
 app.use(express.json());
 
+// Expose public config variables to frontend
+app.get('/api/config', (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: {
+      googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+    }
+  });
+});
+
 // Simple health endpoint
 app.get('/api/health', (req, res) => {
   if (mongoose.connection.readyState === 1) {

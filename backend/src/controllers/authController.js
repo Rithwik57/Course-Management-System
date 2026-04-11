@@ -1,5 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'dummy_client_id');
 const User = require('../models/User');
 const { sendSuccess, sendError } = require('../utils/apiResponse');
 const { requireFields, isValidEmail } = require('../utils/validators');
@@ -112,8 +114,54 @@ const getMe = async (req, res, next) => {
   });
 };
 
+const googleLogin = async (req, res, next) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) return sendError(res, 400, 'Token is required');
+    
+    // Verify Google token
+    const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID || 'dummy_client_id',
+    }).catch(e => { throw new Error('Invalid Google Token'); });
+    
+    const payload = ticket.getPayload();
+    const { email, name } = payload;
+    
+    let user = await User.findOne({ email: String(email).toLowerCase() });
+    
+    if (!user) {
+      // Auto-register student
+      user = await User.create({
+        name,
+        email: String(email).toLowerCase(),
+        role: 'student',
+        isActive: true,
+      });
+      logInfo(`Student registered via Google: ${user.email}`);
+    }
+    
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    
+    logInfo(`User login success (Google): ${user.email} (${user.role})`);
+    
+    return sendSuccess(res, 200, {
+      message: 'Google Login successful.',
+      token,
+      user: sanitizeUser(user),
+    });
+  } catch (error) {
+    return sendError(res, 401, error.message || 'Invalid Google token');
+  }
+};
+
 module.exports = {
   login,
   register,
   getMe,
+  googleLogin,
 };

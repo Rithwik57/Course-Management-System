@@ -46,6 +46,27 @@ async function login(email, password) {
   }
 }
 
+async function handleGoogleLogin(response) {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential: response.credential })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      const err = document.getElementById("error");
+      if(err) { err.style.display = "flex"; err.textContent = "⚠ Google auth failed."; }
+      return;
+    }
+    localStorage.setItem("token", data.data.token);
+    setCurrentUser(data.data.user);
+    window.location.href = getBasePath() + getDashboardPath(data.data.user.role);
+  } catch(err) {
+    console.error("Google Login Error", err);
+  }
+}
+
 async function register(name, email, password) {
   try {
     const res = await fetch(`${BASE_URL}/auth/register`, {
