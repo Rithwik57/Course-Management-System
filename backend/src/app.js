@@ -10,6 +10,7 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
+const path = require('path');
 
 // Global middleware
 app.use(cors());
@@ -39,6 +40,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/settings', settingsRoutes);
+
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, '../../frontend')));
 
 // Error handlers (keep these at the end)
 app.use(notFound);
